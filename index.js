@@ -49,3 +49,12 @@ const jobs = database.collection("jobs")
   const result = await cursor.toArray();
   res.send(result);
  })
+
+
+ //jobs related api
+ //add-jobs
+app.post('/add-jobs', async (req, res)=>{
+  const job = req.body;
+  const result = await jobs.insertOne(job);
+  res.send(result)
+})

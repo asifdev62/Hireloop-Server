@@ -53,7 +53,7 @@ const jobs = database.collection("jobs")
 
  //jobs related api
  //add-jobs
-app.post('/add-jobs', async (req, res)=>{
+app.post('/jobs', async (req, res)=>{
   const job = req.body;
   const result = await jobs.insertOne(job);
   res.send(result)

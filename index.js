@@ -1,7 +1,7 @@
  import express from "express";
  import cors from "cors";
  import dotenv from "dotenv";
- import { MongoClient } from 'mongodb';
+ import { MongoClient, ObjectId } from 'mongodb';
 
  dotenv.config();
  const app = express();
@@ -57,4 +57,19 @@ app.post('/jobs', async (req, res)=>{
   const job = req.body;
   const result = await jobs.insertOne(job);
   res.send(result)
+})
+
+
+app.get("/jobs", async(req, res)=>{
+  const cursor = jobs.find();
+  const result = await cursor.toArray();
+  res.send(result)
+})
+
+
+app.delete("/jobs/:id",async (req, res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await jobs.deleteOne(query);
+  res.send(result);
 })

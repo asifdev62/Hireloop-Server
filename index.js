@@ -61,7 +61,33 @@ app.post('/jobs', async (req, res)=>{
 
 
 app.get("/jobs", async(req, res)=>{
-  const cursor = jobs.find();
+
+  const query = {};
+  console.log("query", req.query)
+
+  if(req.query){
+
+    if(req.query.jobType){
+      query.jobType = { $regex: `^${req.query.jobType}$`, $options: "i" };
+    }
+    if(req.query.isRemote){
+      query.isRemote = req.query.isRemote === "true";
+    }
+    if(req.query.category){
+      query.category = { $regex: `^${req.query.category}$`, $options: "i" };
+    }
+
+    if (req.query.search) {
+    query.$or = [
+      { title: { $regex: req.query.search, $options: "i" } },
+      { company: { $regex: req.query.search, $options: "i" } },
+      { responsibilities: { $regex: req.query.search, $options: "i" } },
+      { requirements: { $regex: req.query.search, $options: "i" } },
+    ];
+  }
+   
+  }
+  const cursor = jobs.find(query);
   const result = await cursor.toArray();
   res.send(result)
 })

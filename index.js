@@ -29,9 +29,10 @@ export async function disconnectFromMongoDB() {
 }
 
 const connectedClient = await connectToMongoDB();
-const database = connectedClient.db("hireloopdb")
-const users = database.collection("user")
-const jobs = database.collection("jobs")
+const database = connectedClient.db("hireloopdb");
+const users = database.collection("user");
+const jobs = database.collection("jobs");
+const applications = database.collection("applications");
 
 
  app.get('/', (req, res)=>{
@@ -108,4 +109,13 @@ app.get("/jobs/:id", async(req, res)=>{
   const query = {_id: new ObjectId(id)};
   const result = await jobs.findOne(query);
   res.send(result);
+})
+
+
+
+//application realted apis
+app.post("/applications", async(req, res)=>{
+  const application = req.body;
+  const result = await applications.insertOne(application);
+  res.send(result)
 })

@@ -99,3 +99,13 @@ app.delete("/jobs/:id",async (req, res)=>{
   const result = await jobs.deleteOne(query);
   res.send(result);
 })
+
+
+
+//jobs details 
+app.get("/jobs/:id", async(req, res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await jobs.findOne(query);
+  res.send(result);
+})

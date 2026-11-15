@@ -48,10 +48,18 @@ const payments = database.collection("payments");
     console.log(`hireloop is running port ${port}`)
  })
 
-
+//users related apis
  app.get('/users', async (req, res)=>{
   const cursor = users.find({});
   const result = await cursor.toArray();
+  res.send(result);
+ })
+
+
+ app.get("/users/:id/premium", async(req, res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await users.findOne(query, {projection: {premium: 1}});
   res.send(result);
  })
 
@@ -172,7 +180,7 @@ app.post('/payments/checkout-verify', async(req, res)=>{
   if (status === "complete" && payment_status === "paid"){
 
     const sessionQuery = {sessionId};
-    const existingPayment = await payment.findOne(sessionQuery);
+    const existingPayment = await payments.findOne(sessionQuery);
 
     if(existingPayment){
       return res.send({success: false, message: 'Payment already verified'});
@@ -190,7 +198,7 @@ app.post('/payments/checkout-verify', async(req, res)=>{
     const result = await payments.insertOne(payment);
 
     //update the user table
-    const query = {_id: new ObjectId(metadata.userid)};
+    const query = {_id: new ObjectId(metadata.userId)};
 
     const updatedDoc = {
       $set:{

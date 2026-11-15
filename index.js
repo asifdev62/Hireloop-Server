@@ -116,6 +116,16 @@ app.delete("/jobs/:id",async (req, res)=>{
 
 
 //jobs details 
+//jobs count
+app.get("/jobs/count", async (req, res) => {
+  const query = {};
+  if (req.query.recruiterId) {
+    query.recruiterId = req.query.recruiterId;
+  }
+  const result = await jobs.countDocuments(query);
+  res.send({ count: result });
+});
+
 app.get("/jobs/:id", async(req, res)=>{
   const id = req.params.id;
   const query = {_id: new ObjectId(id)};

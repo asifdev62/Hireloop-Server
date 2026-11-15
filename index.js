@@ -2,8 +2,11 @@
  import cors from "cors";
  import dotenv from "dotenv";
  import { MongoClient, ObjectId } from 'mongodb';
+ import Stripe from "stripe";
+dotenv.config();
 
- dotenv.config();
+ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
  const app = express();
  const port = process.env.PORT || 5000;
 
@@ -33,6 +36,7 @@ const database = connectedClient.db("hireloopdb");
 const users = database.collection("user");
 const jobs = database.collection("jobs");
 const applications = database.collection("applications");
+const payments = database.collection("payments");
 
 
  app.get('/', (req, res)=>{
@@ -121,11 +125,85 @@ app.post("/applications", async(req, res)=>{
 })
 
 
-app.get("/applications", async(req, res)=>{
-  const userId = req.query.userId;
 
-  const query = {userId: userId}
+app.get("/applications", async(req, res)=>{
+  const query = {};
+  if(req.query.applicantId){
+    query.userId = req.query.applicantId;
+  }
   const cursor = applications.find(query);
   const result = await cursor.toArray();
   res.send(result);
+})
+
+
+
+app.get("/applications/count", async(req, res)=>{
+  const query = {};
+  if(req.query.applicantId){
+    query.userId = req.query.applicantId;
+  }
+  const result = await applications.countDocuments(query)
+  res.send({count: result});
+})
+
+
+
+//payments related apis
+app.post('/payments/checkout-verify', async(req, res)=>{
+  const {sessionId} = req.body;
+
+  if(!sessionId){
+    return res.send({success: false, message: "Session ID is required"});
+  }
+
+  const {
+    status,
+    payment_status,
+    metadata,
+    customer_email,
+    payment_intent,} = await stripe.checkout.sessions.retrieve(sessionId)
+
+    //1.is used new session
+    //2.check is the session is for th ecurrently looged in user
+    //3.insert collection into the payment collection
+    //4.update user information as premium user
+
+  if (status === "complete" && payment_status === "paid"){
+
+    const sessionQuery = {sessionId};
+    const existingPayment = await payment.findOne(sessionQuery);
+
+    if(existingPayment){
+      return res.send({success: false, message: 'Payment already verified'});
+    }
+    const payment = {
+    status,
+    sessionId,
+    payment_status,
+    customer_email,
+    userId: metadata.userId,
+    payment_intent,
+    payment_date: new Date(),
+    }
+
+    const result = await payments.insertOne(payment);
+
+    //update the user table
+    const query = {_id: new ObjectId(metadata.userid)};
+
+    const updatedDoc = {
+      $set:{
+        premium: true,
+      }
+    }
+    const updateResult = await users.updateOne(
+      query,
+      updatedDoc
+    );
+    res.send({success: true, result, updateResult});
+    return;
+  }
+
+  res.send({success: false, message: "payment verification failed"})
 })

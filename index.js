@@ -163,7 +163,7 @@ app.get("/applications", async(req, res)=>{
       query.jobId = { $in: jobIds };
     }
   };
-  
+
   const cursor = applications.find(query);
   const result = await cursor.toArray();
   res.send(result);
@@ -179,6 +179,63 @@ app.get("/applications/count", async(req, res)=>{
   const result = await applications.countDocuments(query)
   res.send({count: result});
 })
+
+
+
+// The statuses an application is allowed to move through (keep in sync with
+// APPLICATION_STATUSES in hireloop/lib/actions/applications.ts).
+const APPLICATION_STATUSES = [
+  "Applied",
+  "Review",
+  "Shortlisted",
+  "Interview",
+  "Offered",
+  "Rejected",
+];
+
+//application status change
+const updateApplicationStatusHandler = async (req, res) => {
+  const { id } = req.params;
+  const status = req.body?.status;
+
+  // 1. Validate before touching MongoDB, so bad input is a 400 (not a 500).
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).send({ message: "Invalid application id" });
+  }
+
+  if (!APPLICATION_STATUSES.includes(status)) {
+    return res.status(400).send({
+      message: `Status must be one of: ${APPLICATION_STATUSES.join(", ")}`,
+    });
+  }
+
+  const query = { _id: new ObjectId(id) };
+  const updateDoc = {
+    $set: {
+      status,
+      updatedAt: new Date().toISOString(),
+    },
+  };
+
+  try {
+    const result = await applications.updateOne(query, updateDoc);
+
+    // 2. Nothing matched = the application does not exist.
+    if (result.matchedCount === 0) {
+      return res.status(404).send({ message: "Application not found" });
+    }
+
+    res.send({ ...result, status });
+  } catch (error) {
+    console.error("Failed to update application status:", error);
+    res.status(500).send({ message: "Failed to update application status" });
+  }
+};
+
+// Plural path matches the other /applications routes; the singular one is kept
+// so older clients (and manual Postman tests) keep working.
+app.patch("/applications/:id", updateApplicationStatusHandler);
+app.patch("/application/:id", updateApplicationStatusHandler);
 
 
 

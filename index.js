@@ -64,6 +64,20 @@ const payments = database.collection("payments");
  })
 
 
+
+ app.patch('/users/:id/role', async(req, res)=>{
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set: {
+      role: req.body.role,
+    }
+  }
+  const result = await users.updateOne(query, updateDoc);
+  res.send(result);
+ })
+
+
  //jobs related api
  //add-jobs
 app.post('/jobs', async (req, res)=>{

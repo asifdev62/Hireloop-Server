@@ -89,6 +89,9 @@ app.get("/jobs", async(req, res)=>{
     if(req.query.category){
       query.category = { $regex: `^${req.query.category}$`, $options: "i" };
     }
+    if(req.query.recruiterId){
+      query.category = req.query.category;
+    }
 
     if (req.query.search) {
     query.$or = [
@@ -148,7 +151,19 @@ app.get("/applications", async(req, res)=>{
   const query = {};
   if(req.query.applicantId){
     query.userId = req.query.applicantId;
-  }
+  };
+
+  if(req.query.jobId){
+    query.jobId = req.query.jobId;
+  };
+
+  if(req.query.jobIds){
+    const jobIds = String(req.query.jobIds).split(",").filter(Boolean);
+    if(jobIds.length > 0){
+      query.jobId = { $in: jobIds };
+    }
+  };
+  
   const cursor = applications.find(query);
   const result = await cursor.toArray();
   res.send(result);
